@@ -1,0 +1,33 @@
+/* src/components/Tabs.css */
+
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tab-buttons button {
+  background-color: #e6f3eb;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #2e8b57;
+  transition: all 0.2s ease;
+}
+
+.tab-buttons button:hover {
+  background-color: #d3edd9;
+}
+
+.tab-buttons .active {
+  background-color: #2e8b57;
+  color: white;
+  font-weight: bold;
+}
+
+.tab-content {
+  margin-top: 2rem;
+}
