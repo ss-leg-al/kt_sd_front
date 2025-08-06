@@ -10,7 +10,6 @@ import {
   ListItemText,
 } from '@mui/material';
 
-
 const ChatbotTab = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -18,6 +17,15 @@ const ChatbotTab = () => {
   const [loadingMessage, setLoadingMessage] = useState('쓰레기 줍는 중...');
 
   const loadingMessages = ['쓰레기 줍는 중...', '분리수거 하는 중...'];
+
+  // 🗣️ TTS 함수
+  const speakText = (text) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ko-KR';
+    utterance.pitch = 1;
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -38,9 +46,14 @@ const ChatbotTab = () => {
       const data = await response.json();
       const botMessage = { sender: 'bot', content: data.answer };
       setMessages((prev) => [...prev, botMessage]);
+
+      // ✅ TTS 실행
+      speakText(data.answer);
     } catch {
       const botMessage = { sender: 'bot', content: 'Error: Unable to fetch response.' };
       setMessages((prev) => [...prev, botMessage]);
+
+      speakText('죄송합니다. 응답을 불러오지 못했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -155,4 +168,5 @@ const styles = {
     gap: '0.5rem',
   },
 };
+
 export default ChatbotTab;
