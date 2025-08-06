@@ -15,9 +15,9 @@ const ChatbotTab = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('프로틴 먹는 중...');
+  const [loadingMessage, setLoadingMessage] = useState('쓰레기 줍는 중...');
 
-  const loadingMessages = ['프로틴 먹는 중...', '벤치프레스 하는 중...', '유산소 하는 중...'];
+  const loadingMessages = ['쓰레기 줍는 중...', '분리수거 하는 중...'];
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -32,7 +32,7 @@ const ChatbotTab = () => {
       const response = await fetch('http://localhost:4000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: input, role: 'trainer' }),
+        body: JSON.stringify({ question: input, role: 'env_helper' }),
       });
 
       const data = await response.json();
@@ -52,7 +52,7 @@ const ChatbotTab = () => {
 
   return (
     <Box sx={styles.container}>
-      <Typography sx={styles.title}>운동에 대해 무엇이든 물어보세요</Typography>
+      <Typography sx={styles.title}>환경에 관해 무엇이든 물어보세요</Typography>
 
       <Paper elevation={2} sx={styles.chatArea}>
         <List>
@@ -124,7 +124,7 @@ const styles = {
   },
   title: {
     textAlign: 'center',
-    fontSize: '2rem',
+    fontSize: '1.5rem',
     fontWeight: 'bold',
     color: '#2e8b57',
   },

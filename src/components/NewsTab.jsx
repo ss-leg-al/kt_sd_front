@@ -3,7 +3,7 @@ import axios from "axios";
 
 const News = () => {
   const [news, setNews] = useState([]);
-  const [query, setQuery] = useState("건강"); // 기본 검색어
+  const [query, setQuery] = useState("환경"); // 기본 검색어
   const [loading, setLoading] = useState(false);
 
   const fetchNews = async (searchQuery) => {
@@ -39,7 +39,7 @@ const News = () => {
 
       {/* 태그 버튼 */}
       <div style={styles.tagContainer}>
-        {["환경", "재활용", "친환경", "으악", "성동구"].map((tag) => (
+        {["환경", "재활용", "친환경", "분리수거", "성동구"].map((tag) => (
           <button
             key={tag}
             onClick={() => handleTagClick(tag)}
@@ -117,7 +117,7 @@ const styles = {
     listStyle: "none",
     padding: 0,
     margin: 0,
-    maxHeight: "300px",        // ✅ 스크롤 높이 제한
+    maxHeight: "332px",        // ✅ 스크롤 높이 제한
     overflowY: "auto",         // ✅ 세로 스크롤 활성화
     border: "1px solid #ddd",  // (선택) 영역 구분선
     borderRadius: "8px",
