@@ -140,6 +140,7 @@ const styles = {
     fontSize: '1.5rem',
     fontWeight: 'bold',
     color: '#2e8b57',
+    fontFamily: 'Paperlogy, sans-serif',
   },
   chatArea: {
     flexGrow: 1,
