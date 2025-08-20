@@ -40,7 +40,7 @@ const MapTab = () => {
 
   // 사용자 위치 가져오기
 useEffect(() => {
-  if (!mapReady) return;
+  if (!mapReady || userLocation) return;
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
