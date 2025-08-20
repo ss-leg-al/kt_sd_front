@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
-// JSON 파일 경로
 const dataMap = {
   의류수거함: "/data/sd_cloth_bins.json",
-  폐건전지: "/data/sd_battery_bins.json",
+  폐건전지함: "/data/sd_battery_bins.json",
   휴지통: "/data/sd_trash_bins.json",
 };
 
 const markerColorMap = {
   의류수거함: "#2e8b57",
-  폐건전지: "#1e90ff",
+  폐건전지함: "#1e90ff",
   휴지통: "#ff6347",
 };
 
@@ -19,9 +18,8 @@ const MapTab = () => {
   const [locations, setLocations] = useState([]);
   const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  const [mapInstance, setMapInstance] = useState(null); // map 객체 보관용
+  const [mapInstance, setMapInstance] = useState(null);
 
-  // Kakao Maps SDK 로드
   useEffect(() => {
     const scriptId = "kakao-map-script";
     if (!document.getElementById(scriptId)) {
@@ -38,31 +36,33 @@ const MapTab = () => {
     }
   }, []);
 
-  // 사용자 위치 가져오기
-useEffect(() => {
-  if (!mapReady || userLocation) return;
+  useEffect(() => {
+    if (!mapReady) return;
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      console.log("사용자 위치", position);
-      setUserLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
-    },
-    (error) => {
-      console.error("위치 정보 가져오기 실패:", error);
-      Swal.fire({
-        icon: "warning",
-        title: "위치 권한이 필요합니다",
-        text: "브라우저에서 위치 권한을 허용해주세요.",
-        confirmButtonColor: '#2e8b57'
-      });
-    }
-  );
-}, [mapReady]);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error("위치 정보 가져오기 실패:", error);
+        Swal.fire({
+          icon: "warning",
+          title: "위치 권한이 필요합니다",
+          text: "브라우저에서 위치 권한을 허용해주세요.",
+          confirmButtonColor: '#2e8b57'
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }, [mapReady]);
 
-  // 선택된 태그의 JSON 데이터 로드
   useEffect(() => {
     if (!mapReady) return;
     fetch(dataMap[selectedTag])
@@ -71,7 +71,6 @@ useEffect(() => {
       .catch((err) => console.error("JSON 로드 오류:", err));
   }, [selectedTag, mapReady]);
 
-  // 지도 렌더링 및 마커 표시
   useEffect(() => {
     if (!mapReady || locations.length === 0) return;
 
@@ -81,7 +80,7 @@ useEffect(() => {
       level: 4,
     };
     const map = new window.kakao.maps.Map(container, options);
-    setMapInstance(map); // 저장
+    setMapInstance(map);
 
     const color = markerColorMap[selectedTag];
 
@@ -109,9 +108,8 @@ useEffect(() => {
     });
   }, [locations, mapReady]);
 
-  // 가장 가까운 수거함 찾기
-  const findNearestLocation = () => {
-    if (!userLocation || locations.length === 0) {
+  const findNearestLocation = async () => {
+    if (!userLocation || locations.length === 0 || !mapInstance) {
       alert("위치 정보 또는 수거함 정보가 없습니다.");
       return;
     }
@@ -133,35 +131,78 @@ useEffect(() => {
     let nearest = null;
 
     for (const loc of locations) {
-      const dist = distance(
-        userLocation.lat,
-        userLocation.lng,
-        loc.lat,
-        loc.lng
-      );
+      const dist = distance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
       if (dist < minDist) {
         minDist = dist;
         nearest = loc;
       }
     }
 
-    if (nearest && mapInstance) {
-      const moveLatLon = new window.kakao.maps.LatLng(nearest.lat, nearest.lng);
-      mapInstance.setCenter(moveLatLon);
-      mapInstance.setLevel(3);
-      Swal.fire({
-      icon: 'info',
+    if (!nearest) return;
+
+    Swal.fire({
+      icon: "info",
       title: `가장 가까운 ${selectedTag}`,
       text: nearest.location,
       confirmButtonColor: '#2e8b57'
     });
+
+    // Kakao Mobility 도보 길찾기 API 호출
+    try {
+      const REST_API_KEY = "52da38bbf02e1b42826b5084208c6c01";
+      const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${userLocation.lng},${userLocation.lat}&destination=${nearest.lng},${nearest.lat}&waypoints=&priority=RECOMMEND&car_fuel=GASOLINE&car_hipass=false&alternatives=false&road_details=false`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `KakaoAK ${REST_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!data.routes || !data.routes[0]) {
+        throw new Error("경로 없음");
+      }
+
+      const linePath = [];
+
+      const roads = data.routes[0].sections.flatMap((s) => s.roads);
+      roads.forEach((road) => {
+        for (let i = 0; i < road.vertexes.length; i += 2) {
+          const lng = road.vertexes[i];
+          const lat = road.vertexes[i + 1];
+          linePath.push(new window.kakao.maps.LatLng(lat, lng));
+        }
+      });
+
+      new window.kakao.maps.Polyline({
+        map: mapInstance,
+        path: linePath,
+        strokeWeight: 5,
+        strokeColor: "#2e8b57",
+        strokeOpacity: 0.8,
+        strokeStyle: "solid",
+      });
+
+      mapInstance.setLevel(4);
+      mapInstance.setCenter(new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng));
+    } catch (error) {
+      console.error("도보 경로 요청 실패:", error);
+      Swal.fire({
+        icon: "error",
+        title: "도보 경로를 불러올 수 없습니다",
+        text: "경로 데이터 요청 중 오류가 발생했습니다.",
+        confirmButtonColor: '#2e8b57'
+      });
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.tagContainer}>
-        {["의류수거함", "폐건전지", "휴지통"].map((tag) => (
+        {Object.keys(dataMap).map((tag) => (
           <button
             key={tag}
             onClick={() => setSelectedTag(tag)}
@@ -176,15 +217,13 @@ useEffect(() => {
         ))}
       </div>
 
-      
+      <div id="map" style={styles.map}></div>
 
-     <div id="map" style={styles.map}></div>
-
-     <div style={{ textAlign: "right", marginTop: "1rem" }}>
+      <div style={{ textAlign: "right", marginTop: "1rem" }}>
         <button onClick={findNearestLocation} style={styles.nearestButton}>
           가장 가까운 {selectedTag} 찾기
         </button>
-     </div>
+      </div>
     </div>
   );
 };

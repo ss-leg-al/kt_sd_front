@@ -1,6 +1,6 @@
 import './App.css';
 import Tabs from './components/Tabs';
-import logo from './assets/logo.png'; // 로고 이미지 경로에 맞게 조정
+import logo from '/data/logo.png'; // 로고 이미지 경로에 맞게 조정
 
 function App() {
   return (
