@@ -52,13 +52,13 @@ const MapTab = () => {
           icon: "warning",
           title: "위치 권한이 필요합니다",
           text: "브라우저에서 위치 권한을 허용해주세요.",
-          confirmButtonColor: '#2e8b57'
+          confirmButtonColor: "#2e8b57",
         });
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   }, [mapReady]);
@@ -96,17 +96,24 @@ const MapTab = () => {
           box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
         " title="${item.location}"></div>
       `;
-
       const overlay = new window.kakao.maps.CustomOverlay({
         position,
         content: markerContent,
         yAnchor: 0.5,
         xAnchor: 0.5,
       });
-
       overlay.setMap(map);
     });
-  }, [locations, mapReady]);
+
+    // 사용자 위치 마커 표시
+    if (userLocation) {
+      const userMarker = new window.kakao.maps.Marker({
+        position: new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng),
+        map,
+        title: "현재 위치",
+      });
+    }
+  }, [locations, mapReady, userLocation]);
 
   const findNearestLocation = async () => {
     if (!userLocation || locations.length === 0 || !mapInstance) {
@@ -121,9 +128,7 @@ const MapTab = () => {
       const dLon = toRad(lng2 - lng1);
       const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) *
-          Math.cos(toRad(lat2)) *
-          Math.sin(dLon / 2) ** 2;
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
@@ -140,17 +145,9 @@ const MapTab = () => {
 
     if (!nearest) return;
 
-    Swal.fire({
-      icon: "info",
-      title: `가장 가까운 ${selectedTag}`,
-      text: nearest.location,
-      confirmButtonColor: '#2e8b57'
-    });
-
-    // Kakao Mobility 도보 길찾기 API 호출
     try {
       const REST_API_KEY = "52da38bbf02e1b42826b5084208c6c01";
-      const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${userLocation.lng},${userLocation.lat}&destination=${nearest.lng},${nearest.lat}&waypoints=&priority=RECOMMEND&car_fuel=GASOLINE&car_hipass=false&alternatives=false&road_details=false`;
+      const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${userLocation.lng},${userLocation.lat}&destination=${nearest.lng},${nearest.lat}&priority=RECOMMEND&road_details=false`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -177,13 +174,25 @@ const MapTab = () => {
         }
       });
 
+      // 경로 그리기
       new window.kakao.maps.Polyline({
         map: mapInstance,
         path: linePath,
         strokeWeight: 5,
-        strokeColor: "#2e8b57",
+        strokeColor: "#ed019e",
         strokeOpacity: 0.8,
         strokeStyle: "solid",
+      });
+
+      // 거리/시간 표시
+      const distanceM = data.routes[0].summary.distance;
+      const durationS = data.routes[0].summary.duration;
+
+      Swal.fire({
+        icon: "info",
+        title: `가장 가까운 ${selectedTag}`,
+        html: `${nearest.location}<br/>도보 거리: ${(distanceM / 1000).toFixed(2)}km<br/>`,
+        confirmButtonColor: "#2e8b57",
       });
 
       mapInstance.setLevel(4);
@@ -194,7 +203,7 @@ const MapTab = () => {
         icon: "error",
         title: "도보 경로를 불러올 수 없습니다",
         text: "경로 데이터 요청 중 오류가 발생했습니다.",
-        confirmButtonColor: '#2e8b57'
+        confirmButtonColor: "#2e8b57",
       });
     }
   };
